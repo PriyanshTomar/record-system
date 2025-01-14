@@ -1,0 +1,153 @@
+import tkinter as tk
+from tkinter import messagebox, filedialog, ttk
+import csv
+import os
+
+FILE_NAME = "students.csv"
+
+# File Handling Class
+class FileHandler:
+    @staticmethod
+    def save_student(first_name, last_name, gender, branch, address):
+        file_exists = os.path.isfile(FILE_NAME)
+        with open(FILE_NAME, mode="a", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            if not file_exists:
+                writer.writerow(["First Name", "Last Name", "Gender", "Branch", "Address"])
+            writer.writerow([first_name, last_name, gender, branch, address])
+
+    @staticmethod
+    def read_students():
+        if not os.path.isfile(FILE_NAME):
+            return []
+        with open(FILE_NAME, mode="r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            next(reader, None)  # Skip the header
+            return list(reader)
+
+# Login Frame
+class LoginFrame(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Login Page")
+        self.geometry("800x550")
+
+        tk.Label(self, text="WELCOME TO MY PROJECT", font=("Arial", 20)).pack(pady=20)
+
+        try:
+            self.image = tk.PhotoImage(file="gehu.png")  # Replace with a valid image file
+            tk.Label(self, image=self.image).pack(pady=20)
+        except Exception as e:
+            tk.Label(self, text="[Image Not Found]").pack(pady=20)
+
+        tk.Button(self, text="CONTINUE", command=self.open_frame2, font=("Arial", 14), bg="blue", fg="white").pack(pady=20)
+
+    def open_frame2(self):
+        self.destroy()
+        Frame2()
+
+# Student Details Frame
+class Frame2(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Student Details")
+        self.geometry("550x500")
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        tk.Label(self, text="Enter First Name").grid(row=0, column=0, padx=10, pady=10)
+        self.first_name = tk.Entry(self)
+        self.first_name.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(self, text="Enter Last Name").grid(row=1, column=0, padx=10, pady=10)
+        self.last_name = tk.Entry(self)
+        self.last_name.grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Label(self, text="Select Gender").grid(row=2, column=0, padx=10, pady=10)
+        self.gender = tk.StringVar(value="")
+        tk.Radiobutton(self, text="Male", variable=self.gender, value="Male").grid(row=2, column=1)
+        tk.Radiobutton(self, text="Female", variable=self.gender, value="Female").grid(row=2, column=2)
+
+        tk.Label(self, text="Enter Branch").grid(row=3, column=0, padx=10, pady=10)
+        self.branch = tk.Entry(self)
+        self.branch.grid(row=3, column=1, padx=10, pady=10)
+
+        tk.Label(self, text="Enter Address").grid(row=4, column=0, padx=10, pady=10)
+        self.address = tk.Entry(self)
+        self.address.grid(row=4, column=1, padx=10, pady=10)
+
+        tk.Button(self, text="Submit Details", command=self.submit_details).grid(row=5, column=0, pady=20)
+        tk.Button(self, text="View All Students", command=self.view_students).grid(row=5, column=1, pady=20)
+
+    def submit_details(self):
+        first_name = self.first_name.get().strip()
+        last_name = self.last_name.get().strip()
+        gender = self.gender.get()
+        branch = self.branch.get().strip()
+        address = self.address.get().strip()
+
+        if not first_name or not last_name or not gender or not branch or not address:
+            messagebox.showwarning("Warning", "All fields are required!")
+            return
+
+        FileHandler.save_student(first_name, last_name, gender, branch, address)
+        messagebox.showinfo("Success", "Student details saved successfully!")
+        self.destroy()
+        Frame3(first_name, last_name, gender, branch, address)
+
+    def view_students(self):
+        self.destroy()
+        Frame4()
+
+# Student Display Frame
+class Frame3(tk.Tk):
+    def __init__(self, first_name, last_name, gender, branch, address):
+        super().__init__()
+        self.title("Student Details")
+        self.geometry("400x400")
+
+        tk.Label(self, text=f"Student Name: {first_name} {last_name}").pack(pady=10)
+        tk.Label(self, text=f"Gender: {gender}").pack(pady=10)
+        tk.Label(self, text=f"Branch: {branch}").pack(pady=10)
+        tk.Label(self, text=f"Address: {address}").pack(pady=10)
+
+        tk.Button(self, text="Make a New Entry", command=self.new_entry).pack(pady=20)
+        tk.Button(self, text="Exit", command=self.exit_app).pack(pady=10)
+
+    def new_entry(self):
+        self.destroy()
+        Frame2()
+
+    def exit_app(self):
+        self.destroy()
+
+# All Students Display Frame
+class Frame4(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("All Students")
+        self.geometry("600x400")
+
+        students = FileHandler.read_students()
+        if not students:
+            messagebox.showinfo("No Data", "No student records found.")
+            self.destroy()
+            Frame2()
+            return
+
+        columns = ("First Name", "Last Name", "Gender", "Branch", "Address")
+        tree = ttk.Treeview(self, columns=columns, show="headings")
+
+        for col in columns:
+            tree.heading(col, text=col)
+
+        for student in students:
+            tree.insert("", tk.END, values=student)
+
+        tree.pack(fill=tk.BOTH, expand=True)
+
+# Main Program
+if __name__ == "__main__":
+    app = LoginFrame()
+    app.mainloop()
